@@ -15,9 +15,10 @@ exports.sendLink = onRequest(async (req, res) => {
     }
 
     try {
-        // 1. Sauvegarder le lien dans Firestore
+        // 1. Sauvegarder le lien ET le token cible dans Firestore
         await db.collection('links').add({
             url: url,
+            token: token,
             timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
@@ -28,7 +29,7 @@ exports.sendLink = onRequest(async (req, res) => {
         };
         await admin.messaging().send(message);
 
-        res.status(200).send(`Succès ! L'URL ${url} a été sauvegardée et envoyée.`);
+        res.status(200).send(`Succès ! L'URL ${url} a été envoyée et sauvegardée pour ce token.`);
     } catch (error) {
         console.error("Erreur:", error);
         res.status(500).send(`Erreur : ${error.message}`);
