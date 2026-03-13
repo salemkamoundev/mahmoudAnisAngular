@@ -41,7 +41,7 @@
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     // ⚠️ À REMPLACER PAR VOTRE CLÉ VAPID
-                    const currentToken = await getToken(messaging, { vapidKey: 'VOTRE_CLE_VAPID' });
+                    const currentToken = await getToken(messaging, { vapidKey: 'BJmYw2gCL-jJ7TeyaVeIZgBKM1o86fmowwxKOAEXh_je5FdHZcPrIY0w8KSfMoPN9_zUUN2zVvGDbgFFWr2zSXA+' });
                     if (currentToken) {
                         document.getElementById('token').innerText = currentToken;
                     }

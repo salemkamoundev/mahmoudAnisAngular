@@ -9,7 +9,7 @@ firebase.initializeApp({
   storageBucket: "mtc-cda71.firebasestorage.app",
   messagingSenderId: "374572897705",
   appId: "1:374572897705:web:e68850486d26f5936f20b8",
-  measurementId: "G-308XY3VP59"
+  measurementId: "G-308XY3VP59",
 });
 
 const messaging = firebase.messaging();
