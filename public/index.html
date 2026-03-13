@@ -4,25 +4,33 @@
     <meta charset="UTF-8">
     <title>Récepteur de Liens</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        #messages { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
-        .token-box { background: #eee; padding: 5px; word-break: break-all; font-size: 12px; }
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        #messages { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; min-height: 100px; background: #fafafa; }
+        .token-box { background: #eee; padding: 10px; word-break: break-all; font-size: 12px; border-radius: 5px; border: 1px dashed #aaa; }
+        .link-item { padding: 10px; margin-bottom: 5px; background: white; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; }
+        .link-item a { color: #0066cc; text-decoration: none; word-break: break-all; }
     </style>
 </head>
 <body>
     <h1>Application de Réception de Liens</h1>
-    <button id="request-permission">1. Autoriser les notifications</button>
-    <p><strong>Votre Token (à copier) :</strong></p>
-    <div id="token" class="token-box">En attente...</div>
     
-    <h3>Liens reçus :</h3>
-    <div id="messages"></div>
+    <div style="margin-bottom: 20px;">
+        <button id="request-permission" style="padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            1. Autoriser les notifications
+        </button>
+    </div>
+    
+    <p><strong>Votre Token :</strong></p>
+    <div id="token" class="token-box">En attente d'autorisation...</div>
+    
+    <h3>Historique des liens :</h3>
+    <div id="messages">Connexion à la base de données...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ⚠️ À REMPLACER PAR VOTRE CONFIGURATION FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyChQfZeEQkUaN6cnWTH94gsz1K_SObMdFg",
             authDomain: "mtc-cda71.firebaseapp.com",
@@ -35,30 +43,75 @@
 
         const app = initializeApp(firebaseConfig);
         const messaging = getMessaging(app);
+        const db = getFirestore(app);
+
+        // ⚠️ REMPLACEZ CETTE LIGNE PAR VOTRE VRAIE CLÉ VAPID COPIÉE DEPUIS FIREBASE
+        const VAPID_KEY = "BJmYw2gCL-jJ7TeyaVeIZgBKM1o86fmowwxKOAEXh_je5FdHZcPrIY0w8KSfMoPN9_zUUN2zVvGDbgFFWr2zSXA";
+
 
         document.getElementById('request-permission').addEventListener('click', async () => {
             try {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    // ⚠️ À REMPLACER PAR VOTRE CLÉ VAPID
-                    const currentToken = await getToken(messaging, { vapidKey: 'BJmYw2gCL-jJ7TeyaVeIZgBKM1o86fmowwxKOAEXh_je5FdHZcPrIY0w8KSfMoPN9_zUUN2zVvGDbgFFWr2zSXA+' });
+                    
+                    if(VAPID_KEY === "VOTRE_CLE_VAPID_ICI") {
+                        alert("🚨 ATTENTION : Vous devez coller votre vraie clé VAPID dans le fichier public/index.html !");
+                        return;
+                    }
+                    
+                    document.getElementById('token').innerText = "Installation du Service Worker...";
+                    
+                    // 1. Enregistrement EXPLICITE du Service Worker
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                    
+                    // 2. On attend qu'il soit totalement prêt
+                    await navigator.serviceWorker.ready;
+
+                    document.getElementById('token').innerText = "Génération du token en cours...";
+                    
+                    // 3. On passe le service worker validé à getToken
+                    const currentToken = await getToken(messaging, { 
+                        vapidKey: VAPID_KEY,
+                        serviceWorkerRegistration: registration 
+                    });
+                    
                     if (currentToken) {
                         document.getElementById('token').innerText = currentToken;
+                    } else {
+                        document.getElementById('token').innerText = "Impossible de générer le token.";
                     }
                 } else {
                     alert("Permission refusée.");
                 }
             } catch (error) {
-                console.error("Erreur:", error);
+                console.error("Erreur FCM :", error);
+                document.getElementById('token').innerText = "Erreur: " + error.message;
             }
         });
 
-        // Écoute des messages quand l'app est ouverte
-        onMessage(messaging, (payload) => {
-            console.log('Message reçu:', payload);
-            const url = payload.data.url;
+        // LECTURE DE FIRESTORE EN TEMPS RÉEL
+        const q = query(collection(db, "links"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
             const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML += `<p>Nouveau lien : <a href="${url}" target="_blank">${url}</a></p>`;
+            messagesDiv.innerHTML = ""; 
+            if (snapshot.empty) {
+                messagesDiv.innerHTML = "<em>Aucun lien pour le moment.</em>";
+                return;
+            }
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if(data.url) {
+                    messagesDiv.innerHTML += `
+                        <div class="link-item">
+                            <span style="margin-right: 10px;">🔗</span> 
+                            <a href="${data.url}" target="_blank">${data.url}</a>
+                        </div>`;
+                }
+            });
+        });
+
+        onMessage(messaging, (payload) => {
+            console.log('Push silencieux reçu:', payload);
         });
     </script>
 </body>

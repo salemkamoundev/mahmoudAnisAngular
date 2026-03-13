@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /links/{document=**} {
+      // Tout le monde peut lire la liste des liens
+      allow read: if true;
+      // Seul le backend (votre fonction) a le droit d'écrire
+      allow write: if false; 
+    }
+  }
+}

@@ -18,5 +18,8 @@
       "codebase": "default",
       "source": "functions"
     }
-  ]
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  }
 }
