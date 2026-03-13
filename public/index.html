@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Récepteur de Liens</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #messages { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
+        .token-box { background: #eee; padding: 5px; word-break: break-all; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Application de Réception de Liens</h1>
+    <button id="request-permission">1. Autoriser les notifications</button>
+    <p><strong>Votre Token (à copier) :</strong></p>
+    <div id="token" class="token-box">En attente...</div>
+    
+    <h3>Liens reçus :</h3>
+    <div id="messages"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+
+        // ⚠️ À REMPLACER PAR VOTRE CONFIGURATION FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyChQfZeEQkUaN6cnWTH94gsz1K_SObMdFg",
+            authDomain: "mtc-cda71.firebaseapp.com",
+            projectId: "mtc-cda71",
+            storageBucket: "mtc-cda71.firebasestorage.app",
+            messagingSenderId: "374572897705",
+            appId: "1:374572897705:web:e68850486d26f5936f20b8",
+            measurementId: "G-308XY3VP59"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        document.getElementById('request-permission').addEventListener('click', async () => {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    // ⚠️ À REMPLACER PAR VOTRE CLÉ VAPID
+                    const currentToken = await getToken(messaging, { vapidKey: 'VOTRE_CLE_VAPID' });
+                    if (currentToken) {
+                        document.getElementById('token').innerText = currentToken;
+                    }
+                } else {
+                    alert("Permission refusée.");
+                }
+            } catch (error) {
+                console.error("Erreur:", error);
+            }
+        });
+
+        // Écoute des messages quand l'app est ouverte
+        onMessage(messaging, (payload) => {
+            console.log('Message reçu:', payload);
+            const url = payload.data.url;
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p>Nouveau lien : <a href="${url}" target="_blank">${url}</a></p>`;
+        });
+    </script>
+</body>
+</html>
