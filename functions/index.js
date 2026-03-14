@@ -4,37 +4,31 @@ admin.initializeApp();
 const db = admin.firestore();
 
 exports.sendLink = onRequest(async (req, res) => {
-    // Autoriser le CORS
     res.set('Access-Control-Allow-Origin', '*');
 
-    // On ne demande plus de token, juste l'URL !
     const url = req.query.url;
 
     if (!url) {
-        res.status(400).send("Erreur: Fournissez une 'url' en paramètre (ex: ?url=https://google.com).");
+        res.status(400).send("Erreur: Fournissez une 'url' en paramètre.");
         return;
     }
 
     try {
-        // 1. Récupérer TOUS les appareils enregistrés dans la collection "tokens"
         const tokensSnapshot = await db.collection('tokens').get();
         
         if (tokensSnapshot.empty) {
-            res.status(404).send("Aucun appareil enregistré dans la base de données.");
+            res.status(404).send("Aucun appareil enregistré.");
             return;
         }
 
         const tokens = [];
         const batch = db.batch();
 
-        // 2. Préparer les données
         tokensSnapshot.forEach(doc => {
             const tokenData = doc.data();
             if (tokenData.token) {
                 tokens.push(tokenData.token);
                 
-                // Préparer la sauvegarde du lien pour CET utilisateur spécifique
-                // (Cela permet au frontend actuel de continuer à filtrer sans rien changer)
                 const linkRef = db.collection('links').doc();
                 batch.set(linkRef, {
                     url: url,
@@ -45,25 +39,34 @@ exports.sendLink = onRequest(async (req, res) => {
         });
 
         if (tokens.length === 0) {
-            res.status(404).send("Aucun token valide trouvé dans les documents.");
+            res.status(404).send("Aucun token valide.");
             return;
         }
 
-        // 3. Exécuter la sauvegarde de tous les liens en une seule fois (très rapide)
         await batch.commit();
 
-        // 4. Envoyer la notification PUSH à TOUS les tokens d'un coup
+        // NOUVEAU : AJOUT DE LA NOTIFICATION ET DU LIEN CLIQUABLE
         const message = {
-            data: { url: url },
-            tokens: tokens // 'tokens' au pluriel pour la méthode Multicast
+            notification: {
+                title: "🔗 Nouveau lien reçu !",
+                body: "Appuyez ici pour ouvrir l'application et voir le lien."
+            },
+            webpush: {
+                fcm_options: {
+                    // C'est cette ligne qui ouvre votre application au clic !
+                    // Firebase Hosting utilise par défaut l'URL avec votre Project ID
+                    link: "https://mtc-cda71.web.app" 
+                }
+            },
+            data: { url: url }, // On garde ça au cas où l'app est déjà ouverte
+            tokens: tokens
         };
         
         const response = await admin.messaging().sendEachForMulticast(message);
 
-        // 5. Répondre avec un résumé
-        res.status(200).send(`Succès ! L'URL ${url} a été envoyée à ${response.successCount} appareil(s) (Échecs: ${response.failureCount}).`);
+        res.status(200).send(`Succès ! Envoyé à ${response.successCount} appareil(s) (Échecs: ${response.failureCount}).`);
     } catch (error) {
-        console.error("Erreur globale:", error);
+        console.error("Erreur:", error);
         res.status(500).send(`Erreur : ${error.message}`);
     }
 });
