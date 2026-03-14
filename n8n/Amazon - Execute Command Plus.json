@@ -1,0 +1,65 @@
+{
+  "name": "Amazon - Execute Command Plus",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "=node /Users/salemkammoun/Documents/mahmoudAnis/script.js \"{{ $json.body.cities.join(',') }}\" {{ $json.body.priceMin }} {{ $json.body.priceMax }}"
+      },
+      "type": "n8n-nodes-execute-command-plus.executeCommandPlus",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -112
+      ],
+      "id": "849fd71b-7f95-4a2c-97b1-18ad6006a347",
+      "name": "Execute Command Plus"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sauvegarde-filtres",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -384,
+        -176
+      ],
+      "id": "3710512f-cedf-42d1-9aa9-b8ef51996e5b",
+      "name": "Webhook",
+      "webhookId": "948031df-404e-492c-9ed6-3a5d9412bf8a"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Command Plus": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute Command Plus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "46bc4365-793b-49e3-b748-c5e70445c6e2",
+  "meta": {
+    "instanceId": "38e727820e004495453e000695f5cb18b94df462ea81cf8743776aeb9395011a"
+  },
+  "id": "f9laUlMUBKihz7jJ",
+  "tags": []
+}
