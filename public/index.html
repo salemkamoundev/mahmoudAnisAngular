@@ -6,7 +6,6 @@
     <title>Récepteur de Liens</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* ... VOS STYLES CSS RESTENT STRICTEMENT IDENTIQUES ... */
         :root {
             --primary: #4F46E5;
             --primary-hover: #4338CA;
@@ -125,48 +124,29 @@
             text-align: left;
         }
 
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid #E5E7EB;
-            margin-bottom: 20px;
-        }
-        .tab-btn {
-            flex: 1;
-            background: none;
-            border: none;
-            padding: 10px;
-            font-weight: 600;
-            color: var(--text-light);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            border-radius: 0;
-            font-size: 0.9rem;
-        }
+        .tabs { display: flex; border-bottom: 2px solid #E5E7EB; margin-bottom: 20px; }
+        .tab-btn { flex: 1; background: none; border: none; padding: 10px; font-weight: 600; color: var(--text-light); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; border-radius: 0; font-size: 0.9rem; }
         .tab-btn:hover { background-color: transparent; color: var(--text); }
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .autocomplete-wrapper { position: relative; }
-        .suggestions-list {
-            position: absolute;
-            top: calc(100% - 15px);
-            left: 0; right: 0;
-            background: white;
-            border: 1px solid #D1D5DB;
-            border-radius: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin: 0; padding: 0;
-            list-style: none;
-            z-index: 1002;
-            display: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        /* Styles spécifiques au popup Équipements */
+        #equipment-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; padding: 15px;
         }
+        .eq-modal-content {
+            background: white; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .eq-group { margin-bottom: 15px; border-bottom: 1px solid #E5E7EB; padding-bottom: 15px; }
+        .eq-group:last-child { border-bottom: none; }
+        .eq-group h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--primary); }
+        .eq-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 0.85rem; }
+        .eq-item label { cursor: pointer; line-height: 1.3; }
+        .eq-desc { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; display: block; }
+
+        .autocomplete-wrapper { position: relative; }
+        .suggestions-list { position: absolute; top: calc(100% - 15px); left: 0; right: 0; background: white; border: 1px solid #D1D5DB; border-radius: 8px; max-height: 200px; overflow-y: auto; margin: 0; padding: 0; list-style: none; z-index: 1002; display: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .suggestions-list li { padding: 10px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #F3F4F6; }
         .suggestions-list li:hover { background-color: #F9FAFB; color: var(--primary); }
         
@@ -205,7 +185,7 @@
                 </fieldset>
                 <fieldset>
                     <legend>Équipement</legend>
-                    <input type="text" id="equipment-input" placeholder="Ex: 16 sélectionnés" style="margin-bottom: 0;">
+                    <input type="text" id="equipment-input-display" readonly placeholder="Cliquez pour sélectionner les équipements..." style="cursor: pointer; background: white; margin-bottom: 0;">
                 </fieldset>
                 <fieldset>
                     <legend>Prix par km (€)</legend>
@@ -308,6 +288,48 @@
         </div>
     </div>
 
+    <div id="equipment-modal">
+        <div class="eq-modal-content">
+            <h3 style="margin-top: 0; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">Sélection des équipements</h3>
+            
+            <div class="eq-group">
+                <h4>Quel véhicule emmenez-vous ?</h4>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="PROVIDED" id="eq_provided" checked> <label for="eq_provided">Tracteur uniquement <span class="eq-desc">Il suffit d’un tracteur (unité motrice).</span></label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="OTHER" id="eq_other" checked> <label for="eq_other">Attaché <span class="eq-desc">Camions à corps rigide et Sprinter vans</span></label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="REQUIRED" id="eq_required" checked> <label for="eq_required">Tracteur et remorque <span class="eq-desc">Apportez vos propres tracteur et remorque pour effectuer des chargements en direct.</span></label></div>
+            </div>
+
+            <div class="eq-group">
+                <h4>Tracteur uniquement / Tracteur et remorque</h4>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="ONE_SWAP_BODY" id="eq_one_swap" checked> <label for="eq_one_swap">1 caisse mobile</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="TWO_SWAP_BODIES" id="eq_two_swap" checked> <label for="eq_two_swap">2 caisses mobiles</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER" id="eq_detached" checked> <label for="eq_detached">Semi-remorque</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER_BOX_STD" id="eq_box_std" checked> <label for="eq_box_std">Remorque fermée 13,6 m</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER_BOX_2_7M_HEIGHT" id="eq_box_27" checked> <label for="eq_box_27">Semi-remorque fermée de 2,7 m de hauteur</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER_TL" id="eq_trailer_tl" checked> <label for="eq_trailer_tl">Hayon élévateur de remorque dételée</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER_CURTAIN_STD" id="eq_curtain_std" checked> <label for="eq_curtain_std">Remorque à bâche 13,6 m</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DOUBLE_DECK_TRAILER" id="eq_double_deck" checked> <label for="eq_double_deck">Remorque à deux niveaux</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DROP_TRAILER" id="eq_drop_trailer" checked> <label for="eq_drop_trailer">Déposer la remorque</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="LICENSED_DETACHED_TRAILER" id="eq_lic_detached" checked> <label for="eq_lic_detached">Poids lourd avec dérogation de circulation</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="LICENSED_DROP_TRAILER" id="eq_lic_drop" checked> <label for="eq_lic_drop">Licence de dépôt de la remorque</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="DETACHED_TRAILER_CURTAIN_MEGA" id="eq_curtain_mega" checked> <label for="eq_curtain_mega">Remorque méga à bâche 13,6 m</label></div>
+            </div>
+
+            <div class="eq-group">
+                <h4>Attaché</h4>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="SEVEN_HALF_TON_TRUCK" id="eq_7_5_ton" checked> <label for="eq_7_5_ton">Camion de 7,5 tonnes</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="SPRINTER_VAN" id="eq_sprinter" checked> <label for="eq_sprinter">Sprinter Van</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="ATTACHED_TRUCK" id="eq_attached_truck" checked> <label for="eq_attached_truck">Attached camion</label></div>
+                <div class="eq-item"><input type="checkbox" class="eq-checkbox" value="ATTACHED_TRUCK_TL" id="eq_attached_truck_tl" checked> <label for="eq_attached_truck_tl">Attached camion TL</label></div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="clear-eq-btn" style="background: #E5E7EB; color: #374151; flex: 1;">Tout désélectionner</button>
+                <button type="button" id="close-eq-modal" style="flex: 1;">Valider (<span id="eq-count-badge">0</span>)</button>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <h1>📱 Mes Liens</h1>
         
@@ -328,7 +350,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        // Suppression de getMessaging et getToken
         import { getFirestore, collection, onSnapshot, query, where, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -344,7 +365,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // On cherche le téléphone au lieu du token dans le localStorage
         const savedPhone = localStorage.getItem('userPhone');
 
         if (savedPhone) {
@@ -371,10 +391,8 @@
                 btn.innerText = "Activation en cours...";
                 btn.disabled = true;
 
-                // Nettoyage du numéro de téléphone (on retire les espaces)
                 const phoneId = userPhoneInput.replace(/\s+/g, '');
 
-                // L'ID du document devient le numéro de téléphone, on enregistre dans la collection 'users'
                 await setDoc(doc(db, "users", phoneId), {
                     phone: phoneId,
                     name: userNameInput,
@@ -382,14 +400,12 @@
                     device: navigator.userAgent
                 });
 
-                // Sauvegarde locale
                 localStorage.setItem('userPhone', phoneId);
                 localStorage.setItem('userName', userNameInput);
 
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
                 
-                // On démarre l'écoute pour ce numéro précis
                 startListeningToLinks(phoneId);
 
             } catch (error) {
@@ -402,7 +418,6 @@
 
         // --- ECOUTE DES LIENS ---
         function startListeningToLinks(phoneId) {
-            // On cherche les liens où "phone" correspond
             const q = query(collection(db, "links"), where("phone", "==", phoneId));
             onSnapshot(q, (snapshot) => {
                 const messagesDiv = document.getElementById('messages');
@@ -444,6 +459,39 @@
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.target).classList.add('active');
             });
+        });
+
+        // --- GESTION DU POPUP EQUIPEMENT ---
+        const eqModal = document.getElementById('equipment-modal');
+        const eqInputDisplay = document.getElementById('equipment-input-display');
+        const eqCheckboxes = document.querySelectorAll('.eq-checkbox');
+        const eqCountBadge = document.getElementById('eq-count-badge');
+
+        function updateEqCount() {
+            const checkedCount = document.querySelectorAll('.eq-checkbox:checked').length;
+            eqCountBadge.innerText = checkedCount;
+            if (checkedCount === 0) {
+                eqInputDisplay.value = "Aucun équipement sélectionné";
+            } else if (checkedCount === eqCheckboxes.length) {
+                eqInputDisplay.value = "Tous les équipements sélectionnés";
+            } else {
+                eqInputDisplay.value = `${checkedCount} équipements sélectionnés`;
+            }
+        }
+
+        // Initialisation de l'affichage
+        updateEqCount();
+
+        eqInputDisplay.addEventListener('click', () => { eqModal.style.display = 'flex'; });
+        document.getElementById('close-eq-modal').addEventListener('click', () => { eqModal.style.display = 'none'; });
+        
+        document.getElementById('clear-eq-btn').addEventListener('click', () => {
+            eqCheckboxes.forEach(cb => cb.checked = false);
+            updateEqCount();
+        });
+
+        eqCheckboxes.forEach(cb => {
+            cb.addEventListener('change', updateEqCount);
         });
 
         // --- LOGIQUE AUTOCOMPLÉTION ---
@@ -540,7 +588,10 @@
             const filters = {
                 origins: selectedOrigins,
                 originRadius: parseFloat(document.getElementById('origin-radius').value) || null,
-                equipment: document.getElementById('equipment-input').value || null,
+                
+                // Récupération dynamique des équipements sous forme de tableau
+                equipment: getCheckedValues('.eq-checkbox:checked'),
+                
                 rateKmMin: parseFloat(document.getElementById('rate-km-min').value) || null,
                 rateKmMax: parseFloat(document.getElementById('rate-km-max').value) || null,
                 
@@ -579,7 +630,6 @@
                 saveBtn.innerText = "Enregistrement...";
                 saveBtn.disabled = true;
                 
-                // Sauvegarde sous le document identifié par le numéro de téléphone dans "users"
                 await setDoc(doc(db, "users", userPhone), { filters: filters }, { merge: true });
                 
                 if (!N8N_WEBHOOK_URL.includes("votre-n8n.com")) {
