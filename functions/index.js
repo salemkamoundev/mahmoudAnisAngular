@@ -14,57 +14,44 @@ exports.sendLink = onRequest(async (req, res) => {
     }
 
     try {
-        const tokensSnapshot = await db.collection('tokens').get();
+        // On récupère désormais les utilisateurs (identifiés par leur numéro)
+        const usersSnapshot = await db.collection('users').get();
         
-        if (tokensSnapshot.empty) {
+        if (usersSnapshot.empty) {
             res.status(404).send("Aucun appareil enregistré.");
             return;
         }
 
-        const tokens = [];
+        let count = 0;
         const batch = db.batch();
 
-        tokensSnapshot.forEach(doc => {
-            const tokenData = doc.data();
-            if (tokenData.token) {
-                tokens.push(tokenData.token);
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.phone) {
+                count++;
                 
+                // On crée un document de lien pour ce numéro de téléphone
                 const linkRef = db.collection('links').doc();
                 batch.set(linkRef, {
                     url: url,
-                    token: tokenData.token,
+                    phone: userData.phone, // Utilisation du téléphone comme clé relationnelle
                     timestamp: admin.firestore.FieldValue.serverTimestamp()
                 });
             }
         });
 
-        if (tokens.length === 0) {
-            res.status(404).send("Aucun token valide.");
+        if (count === 0) {
+            res.status(404).send("Aucun numéro de téléphone valide.");
             return;
         }
 
+        // On sauvegarde tous les liens en base de données
         await batch.commit();
 
-        // NOUVEAU : AJOUT DE LA NOTIFICATION ET DU LIEN CLIQUABLE
-        const message = {
-            notification: {
-                title: "🔗 Nouveau lien reçu !",
-                body: "Appuyez ici pour ouvrir l'application et voir le lien."
-            },
-            webpush: {
-                fcm_options: {
-                    // C'est cette ligne qui ouvre votre application au clic !
-                    // Firebase Hosting utilise par défaut l'URL avec votre Project ID
-                    link: "https://mtc-cda71.web.app" 
-                }
-            },
-            data: { url: url }, // On garde ça au cas où l'app est déjà ouverte
-            tokens: tokens
-        };
-        
-        const response = await admin.messaging().sendEachForMulticast(message);
+        // Note : Le code d'envoi de Notification Push (FCM) a été supprimé ici car il nécessitait des tokens.
+        // C'est ici que vous pourriez appeler une API (ex: Twilio) pour envoyer un SMS si besoin.
 
-        res.status(200).send(`Succès ! Envoyé à ${response.successCount} appareil(s) (Échecs: ${response.failureCount}).`);
+        res.status(200).send(`Succès ! Lien distribué à ${count} numéro(s) de téléphone.`);
     } catch (error) {
         console.error("Erreur:", error);
         res.status(500).send(`Erreur : ${error.message}`);
