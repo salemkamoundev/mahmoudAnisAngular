@@ -38,7 +38,7 @@
         h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text); }
         p.subtitle { color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem; }
         
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -89,7 +89,7 @@
         .link-item a:hover { text-decoration: underline; }
         .empty-state { text-align: center; color: var(--text-light); font-style: italic; padding: 20px 0; }
 
-        /* NOUVEAUX STYLES : Bouton et Formulaire de filtres */
+        /* BOUTON D'OUVERTURE DES FILTRES */
         #toggle-filters {
             position: fixed;
             top: 20px;
@@ -101,28 +101,60 @@
         }
         #toggle-filters:hover { background-color: #059669; }
 
+        /* OVERLAY FILTRES */
         #filter-form {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: rgba(243, 244, 246, 0.95); /* Fond légèrement transparent */
+            background: rgba(243, 244, 246, 0.95);
             backdrop-filter: blur(5px);
             z-index: 1000;
-            display: none; /* Deviendra flex via JS */
+            display: none; 
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
+            padding: 1rem;
             box-sizing: border-box;
         }
         .filter-container {
             background: white;
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 16px;
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: left;
+        }
+
+        /* ONGLETS (TABS) */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #E5E7EB;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 10px;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            border-radius: 0;
+            font-size: 0.9rem;
+        }
+        .tab-btn:hover { background-color: transparent; color: var(--text); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
 
         /* STYLES : Autocomplétion et tags des villes */
@@ -178,6 +210,22 @@
             transition: background 0.2s;
         }
         .city-tag span.close-btn:hover { background: rgba(255,255,255,0.4); }
+
+        fieldset {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #F9FAFB;
+        }
+        legend {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #E5E7EB;
+        }
     </style>
 </head>
 <body>
@@ -185,27 +233,137 @@
     <button id="toggle-filters">⚙️ Mes Filtres de Recherche</button>
 
     <div id="filter-form">
-        <div class="filter-container">
-            <h2 style="margin-top: 0; margin-bottom: 1.5rem; text-align: center; color: var(--text);">⚙️ Filtres de Recherche</h2>
+        <div class="filter-container" style="max-height: 90vh; overflow-y: auto;">
+            <h2 style="margin-top: 0; margin-bottom: 1rem; text-align: center; color: var(--text);">⚙️ Filtres de Recherche</h2>
             
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div style="flex: 1;">
-                    <label style="font-size: 0.8rem; font-weight: 500;">Prix Min (€/km)</label>
-                    <input type="number" id="price-min" step="0.01" placeholder="Ex: 1.00">
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 0.8rem; font-weight: 500;">Prix Max (€/km)</label>
-                    <input type="number" id="price-max" step="0.01" placeholder="Ex: 1.20">
-                </div>
+            <div class="tabs">
+                <button class="tab-btn active" data-target="tab1">1. Origine & Prix</button>
+                <button class="tab-btn" data-target="tab2">2. Filtres Avancés</button>
             </div>
 
-            <label style="font-size: 0.8rem; font-weight: 500;">Villes (Recherche)</label>
-            <div class="autocomplete-wrapper">
-                <input type="text" id="city-input" placeholder="Tapez une ville (ex: Paris)..." autocomplete="off">
-                <ul id="city-suggestions" class="suggestions-list"></ul>
+            <div id="tab1" class="tab-content active">
+                
+                <fieldset>
+                    <legend>Origine & Rayon</legend>
+                    <div class="autocomplete-wrapper" style="margin-bottom: 10px;">
+                        <input type="text" id="origin-input" placeholder="Ajouter une origine (ex: Paris)..." autocomplete="off" style="margin-bottom: 5px;">
+                        <ul id="origin-suggestions" class="suggestions-list"></ul>
+                    </div>
+                    <div id="selected-origins" class="selected-cities-container"></div>
+                    
+                    <label style="font-size: 0.8rem; font-weight: 500;">Rayon d'origine (km)</label>
+                    <input type="number" id="origin-radius" placeholder="Ex: 50" value="50" style="margin-bottom: 0;">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Équipement</legend>
+                    <input type="text" id="equipment-input" placeholder="Ex: 16 sélectionnés" style="margin-bottom: 0;">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Prix par km (€)</legend>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Tarif Min</label>
+                            <input type="number" id="rate-km-min" step="0.01" placeholder="Ex: 1.00" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Tarif Max</label>
+                            <input type="number" id="rate-km-max" step="0.01" placeholder="Ex: 2.50" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+                </fieldset>
             </div>
-            
-            <div id="selected-cities" class="selected-cities-container"></div>
+
+            <div id="tab2" class="tab-content">
+                
+                <fieldset>
+                    <legend>Destination & Rayon</legend>
+                    <div class="autocomplete-wrapper" style="margin-bottom: 10px;">
+                        <input type="text" id="dest-input" placeholder="Ajouter une destination..." autocomplete="off" style="margin-bottom: 5px;">
+                        <ul id="dest-suggestions" class="suggestions-list"></ul>
+                    </div>
+                    <div id="selected-destinations" class="selected-cities-container"></div>
+                    <input type="number" id="dest-radius" placeholder="Rayon (en km)" style="margin-bottom: 0;">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Période</legend>
+                    <label style="font-size: 0.8rem; font-weight: 500;">Commencer</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="date" id="start-date" style="margin-bottom: 0;">
+                        <input type="time" id="start-time" style="margin-bottom: 0;">
+                    </div>
+                    <label style="font-size: 0.8rem; font-weight: 500;">Fin</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="end-date" style="margin-bottom: 0;">
+                        <input type="time" id="end-time" style="margin-bottom: 0;">
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Préférences de Trajet</legend>
+                    <label style="font-size: 0.8rem; font-weight: 500; display: block; margin-bottom: 5px;">Type de travail</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; font-size: 0.85rem;">
+                        <label><input type="checkbox" class="work-type" value="BLOCK" checked> Block</label>
+                        <label><input type="checkbox" class="work-type" value="ONE_WAY" checked> Aller simple</label>
+                        <label><input type="checkbox" class="work-type" value="ROUND_TRIP" checked> Aller-retour</label>
+                    </div>
+
+                    <label style="font-size: 0.8rem; font-weight: 500; display: block; margin-bottom: 5px;">Type de conducteur</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; font-size: 0.85rem;">
+                        <label><input type="checkbox" class="driver-type" value="SINGLE_DRIVER"> Seul</label>
+                        <label><input type="checkbox" class="driver-type" value="TEAM_DRIVER"> Équipe</label>
+                        <label><input type="checkbox" class="driver-type" value="TRAMPER_DRIVER"> Itinérant</label>
+                    </div>
+
+                    <label style="font-size: 0.8rem; font-weight: 500; display: block; margin-bottom: 5px;">Type de charge</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.85rem;">
+                        <label><input type="checkbox" class="load-type" value="LIVE"> En direct</label>
+                        <label><input type="checkbox" class="load-type" value="DROP"> Déposer/Atteler</label>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Tarifs & Logistique Avancée</legend>
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.8rem; font-weight: 500;">Paiement Min (€)</label>
+                        <input type="number" id="payout-min" step="1" placeholder="Ex: 500" style="margin-bottom: 0;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Durée Min (h)</label>
+                            <input type="number" id="duration-min" placeholder="Min" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Durée Max (h)</label>
+                            <input type="number" id="duration-max" placeholder="Max" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Distance Min (km)</label>
+                            <input type="number" id="distance-min" placeholder="Min" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 500;">Distance Max (km)</label>
+                            <input type="number" id="distance-max" placeholder="Max" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 500;">Arrêts (Max)</label>
+                        <select id="stops-max" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #D1D5DB; font-family: inherit; background: white;">
+                            <option value="">Tout</option>
+                            <option value="0">0 (Direct)</option>
+                            <option value="1">1 Arrêt</option>
+                            <option value="2">2 Arrêts</option>
+                        </select>
+                    </div>
+                </fieldset>
+            </div>
             
             <button id="save-filters" style="margin-top: 10px;">Enregistrer les filtres</button>
             <button id="close-filters" style="background: none; color: var(--text-light); margin-top: 10px; text-decoration: underline;">Fermer sans enregistrer</button>
@@ -234,6 +392,7 @@
         import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
         import { getFirestore, collection, onSnapshot, query, where, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // ⚠️ REMPLACEZ PAR VOTRE CONFIGURATION FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyChQfZeEQkUaN6cnWTH94gsz1K_SObMdFg",
             authDomain: "mtc-cda71.firebaseapp.com",
@@ -250,7 +409,6 @@
 
         const VAPID_KEY = "BJmYw2gCL-jJ7TeyaVeIZgBKM1o86fmowwxKOAEXh_je5FdHZcPrIY0w8KSfMoPN9_zUUN2zVvGDbgFFWr2zSXA";
 
-        // VERIFICATION DE LA MÉMOIRE LOCALE
         const savedToken = localStorage.getItem('fcmToken');
 
         if (savedToken) {
@@ -259,7 +417,7 @@
             startListeningToLinks(savedToken);
         }
 
-        // ENREGISTREMENT (PREMIÈRE VISITE)
+        // --- AUTHENTIFICATION ---
         document.getElementById('request-permission').addEventListener('click', async () => {
             const errorMsg = document.getElementById('error-msg');
             const btn = document.getElementById('request-permission');
@@ -272,19 +430,12 @@
                 return;
             }
 
-            if(VAPID_KEY === "VOTRE_CLE_VAPID_ICI") {
-                errorMsg.innerText = "🚨 Remplacez la clé VAPID dans le code source !";
-                return;
-            }
-
             try {
                 btn.innerText = "Activation en cours...";
                 btn.disabled = true;
 
                 const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    throw new Error("Vous devez autoriser les notifications pour recevoir les liens.");
-                }
+                if (permission !== 'granted') throw new Error("Vous devez autoriser les notifications.");
 
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 await navigator.serviceWorker.ready;
@@ -318,24 +469,17 @@
             }
         });
 
-        // RÉCUPÉRATION DES LIENS EN TEMPS RÉEL
+        // --- ECOUTE DES LIENS ---
         function startListeningToLinks(userToken) {
             const q = query(collection(db, "links"), where("token", "==", userToken));
-            
             onSnapshot(q, (snapshot) => {
                 const messagesDiv = document.getElementById('messages');
                 let links = [];
-                
                 snapshot.forEach((doc) => links.push(doc.data()));
-
-                links.sort((a, b) => {
-                    const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
-                    const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
-                    return timeB - timeA;
-                });
+                links.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
 
                 if (links.length === 0) {
-                    messagesDiv.innerHTML = "<div class='empty-state'>Aucun lien reçu pour le moment.</div>";
+                    messagesDiv.innerHTML = "<div class='empty-state'>Aucun lien reçu.</div>";
                     return;
                 }
 
@@ -352,159 +496,186 @@
             });
         }
 
-        onMessage(messaging, (payload) => {
-            console.log('Nouveau lien reçu !', payload);
-        });
+        onMessage(messaging, (payload) => console.log('Nouveau lien !', payload));
 
         // --- GESTION DE L'INTERFACE DES FILTRES ---
         const filterForm = document.getElementById('filter-form');
-        const toggleBtn = document.getElementById('toggle-filters');
-        const closeFiltersBtn = document.getElementById('close-filters');
+        document.getElementById('toggle-filters').addEventListener('click', () => filterForm.style.display = 'flex');
+        document.getElementById('close-filters').addEventListener('click', () => filterForm.style.display = 'none');
 
-        // Afficher / masquer le formulaire (en mode flex pour centrer)
-        toggleBtn.addEventListener('click', () => filterForm.style.display = 'flex');
-        closeFiltersBtn.addEventListener('click', () => filterForm.style.display = 'none');
+        // GESTION DES ONGLETS (TABS)
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-        // --- LOGIQUE AUTOCOMPLÉTION DES VILLES ---
-        const cityInput = document.getElementById('city-input');
-        const citySuggestions = document.getElementById('city-suggestions');
-        const selectedCitiesContainer = document.getElementById('selected-cities');
-        let selectedCitiesList = []; // Stockera les villes choisies
-
-        cityInput.addEventListener('input', async (e) => {
-            const query = e.target.value.trim();
-            if (query.length < 2) {
-                citySuggestions.style.display = 'none';
-                return;
-            }
-            
-            try {
-                // Requête API publique du gouvernement français
-                const response = await fetch(`https://geo.api.gouv.fr/communes?nom=${query}&fields=departement&boost=population&limit=5`);
-                const data = await response.json();
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Retirer la classe active partout
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
                 
-                citySuggestions.innerHTML = '';
-                if (data.length > 0) {
-                    data.forEach(city => {
-                        const li = document.createElement('li');
-                        const depName = city.departement ? city.departement.nom : '';
-                        li.textContent = `${city.nom} (${depName})`;
-                        
-                        // Action au clic
-                        li.addEventListener('click', () => {
-                            addCity(city.nom);
-                            cityInput.value = '';
-                            citySuggestions.style.display = 'none';
-                        });
-                        citySuggestions.appendChild(li);
-                    });
-                    citySuggestions.style.display = 'block';
-                } else {
-                    citySuggestions.style.display = 'none';
+                // Ajouter la classe active au bouton cliqué et à son contenu
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.add('active');
+            });
+        });
+
+        // --- LOGIQUE AUTOCOMPLÉTION (GÉNÉRIQUE) ---
+        let selectedOrigins = [];
+        let selectedDestinations = [];
+
+        function setupAutocomplete(inputId, suggestionsId, containerId, listArray) {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            const container = document.getElementById(containerId);
+
+            input.addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                if (query.length < 2) {
+                    suggestions.style.display = 'none';
+                    return;
                 }
-            } catch (error) {
-                console.error("Erreur avec l'API Géo:", error);
-            }
-        });
+                
+                try {
+                    const response = await fetch(`https://geo.api.gouv.fr/communes?nom=${query}&fields=departement&boost=population&limit=5`);
+                    const data = await response.json();
+                    
+                    suggestions.innerHTML = '';
+                    if (data.length > 0) {
+                        data.forEach(city => {
+                            const li = document.createElement('li');
+                            const depName = city.departement ? city.departement.nom : '';
+                            li.textContent = `${city.nom} (${depName})`;
+                            
+                            li.addEventListener('click', () => {
+                                if (!listArray.includes(city.nom)) {
+                                    listArray.push(city.nom);
+                                    renderTags(listArray, container);
+                                }
+                                input.value = '';
+                                suggestions.style.display = 'none';
+                            });
+                            suggestions.appendChild(li);
+                        });
+                        suggestions.style.display = 'block';
+                    } else {
+                        suggestions.style.display = 'none';
+                    }
+                } catch (error) { console.error(error); }
+            });
 
-        // Cacher l'autocomplétion si clic en dehors
-        document.addEventListener('click', (e) => {
-            if (e.target !== cityInput && e.target !== citySuggestions) {
-                citySuggestions.style.display = 'none';
-            }
-        });
-
-        // Fonctions de gestion des tags de ville
-        function addCity(cityName) {
-            if (!selectedCitiesList.includes(cityName)) {
-                selectedCitiesList.push(cityName);
-                renderCities();
-            }
+            // Fermer si on clique ailleurs
+            document.addEventListener('click', (e) => {
+                if (e.target !== input && e.target !== suggestions) {
+                    suggestions.style.display = 'none';
+                }
+            });
         }
 
-        function removeCity(cityName) {
-            selectedCitiesList = selectedCitiesList.filter(c => c !== cityName);
-            renderCities();
-        }
-
-        function renderCities() {
-            selectedCitiesContainer.innerHTML = '';
-            selectedCitiesList.forEach(city => {
+        function renderTags(listArray, container) {
+            container.innerHTML = '';
+            listArray.forEach(item => {
                 const tag = document.createElement('div');
                 tag.className = 'city-tag';
                 
                 const text = document.createElement('span');
-                text.textContent = city;
+                text.textContent = item;
                 
                 const closeBtn = document.createElement('span');
                 closeBtn.className = 'close-btn';
                 closeBtn.innerHTML = '&times;';
-                closeBtn.addEventListener('click', () => removeCity(city));
+                closeBtn.addEventListener('click', () => {
+                    const index = listArray.indexOf(item);
+                    if (index > -1) listArray.splice(index, 1);
+                    renderTags(listArray, container);
+                });
                 
                 tag.appendChild(text);
                 tag.appendChild(closeBtn);
-                selectedCitiesContainer.appendChild(tag);
+                container.appendChild(tag);
             });
         }
 
-        // --- SAUVEGARDE DANS FIRESTORE ---
-        // --- SAUVEGARDE DANS FIRESTORE ET ENVOI À N8N ---
+        // Initialiser pour Origine et Destination
+        setupAutocomplete('origin-input', 'origin-suggestions', 'selected-origins', selectedOrigins);
+        setupAutocomplete('dest-input', 'dest-suggestions', 'selected-destinations', selectedDestinations);
+
+        // --- SAUVEGARDE DE TOUS LES FILTRES ---
         document.getElementById('save-filters').addEventListener('click', async () => {
             const userToken = localStorage.getItem('fcmToken');
-            const userName = localStorage.getItem('userName'); // On récupère aussi le nom pour n8n
+            const userName = localStorage.getItem('userName');
             const saveBtn = document.getElementById('save-filters');
 
             if (!userToken) {
-                alert("Veuillez d'abord activer l'appareil (sauvegarder votre nom).");
+                alert("Veuillez d'abord activer l'appareil.");
                 return;
             }
 
-            // 1. Préparation des données
+            const getCheckedValues = (selector) => Array.from(document.querySelectorAll(selector)).map(cb => cb.value);
+
+            // Création du Payload Complet
             const filters = {
-                priceMin: parseFloat(document.getElementById('price-min').value) || 0,
-                priceMax: parseFloat(document.getElementById('price-max').value) || 0,
-                cities: selectedCitiesList,
+                // Origine & Prix
+                origins: selectedOrigins,
+                originRadius: parseFloat(document.getElementById('origin-radius').value) || null,
+                equipment: document.getElementById('equipment-input').value || null,
+                rateKmMin: parseFloat(document.getElementById('rate-km-min').value) || null,
+                rateKmMax: parseFloat(document.getElementById('rate-km-max').value) || null,
+                
+                // Destination
+                destinations: selectedDestinations,
+                destRadius: parseFloat(document.getElementById('dest-radius').value) || null,
+                
+                // Période
+                startDate: document.getElementById('start-date').value || null,
+                startTime: document.getElementById('start-time').value || null,
+                endDate: document.getElementById('end-date').value || null,
+                endTime: document.getElementById('end-time').value || null,
+                
+                // Types
+                workTypes: getCheckedValues('.work-type:checked'),
+                driverTypes: getCheckedValues('.driver-type:checked'),
+                loadTypes: getCheckedValues('.load-type:checked'),
+                
+                // Logistique Avancée
+                payoutMin: parseFloat(document.getElementById('payout-min').value) || null,
+                durationMin: parseFloat(document.getElementById('duration-min').value) || null,
+                durationMax: parseFloat(document.getElementById('duration-max').value) || null,
+                distanceMin: parseFloat(document.getElementById('distance-min').value) || null,
+                distanceMax: parseFloat(document.getElementById('distance-max').value) || null,
+                stopsMax: document.getElementById('stops-max').value || null,
+                
                 updatedAt: serverTimestamp()
             };
 
-            // Données spécifiques pour n8n (on inclut le token et le nom pour identifier l'utilisateur)
             const n8nPayload = {
                 userToken: userToken,
                 userName: userName,
-                priceMin: filters.priceMin,
-                priceMax: filters.priceMax,
-                cities: filters.cities,
+                ...filters,
                 timestamp: new Date().toISOString()
             };
 
-            // ⚠️ REMPLACEZ CETTE URL PAR L'URL DE VOTRE WEBHOOK N8N
             const N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/sauvegarde-filtres"; 
 
             try {
                 saveBtn.innerText = "Enregistrement...";
                 saveBtn.disabled = true;
                 
-                // 2. Sauvegarde dans Firestore (optionnel si vous ne voulez utiliser QUE n8n, mais recommandé de le garder)
-                await setDoc(doc(db, "tokens", userToken), filters, { merge: true });
+                // Sauvegarde Firestore
+                await setDoc(doc(db, "tokens", userToken), { filters: filters }, { merge: true });
                 
-                // 3. Envoi des données à n8n via une requête POST
-                if (N8N_WEBHOOK_URL !== "https://votre-n8n.com/webhook/sauvegarde-filtres") {
+                // Envoi vers n8n
+                if (!N8N_WEBHOOK_URL.includes("votre-n8n.com")) {
                     await fetch(N8N_WEBHOOK_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(n8nPayload)
                     });
-                    console.log("Données envoyées à n8n avec succès !");
-                } else {
-                    console.warn("L'URL du Webhook n8n n'a pas été configurée.");
                 }
 
                 alert("Filtres enregistrés !");
                 filterForm.style.display = 'none';
             } catch (e) {
-                console.error("Erreur d'enregistrement:", e);
+                console.error(e);
                 alert("Erreur lors de l'enregistrement.");
             } finally {
                 saveBtn.innerText = "Enregistrer les filtres";
